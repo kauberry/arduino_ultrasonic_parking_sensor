@@ -15,5 +15,8 @@ This is my attempt to put together a parking assist device that will do the obvi
 
 
 ### 3D Printed Enclosures
-* Main board and display unit enclosure
-* Ultrasonic sensor enclosure wired to main enclosure for placement options
+#### Ultrasonic Sensor Enclosure
+* Wired to main enclosure for placement options
+![Image](/hardware/mounting/renders/transducer_housing_solid_export.png?raw=true
+
+#### Main board and display unit enclosure
