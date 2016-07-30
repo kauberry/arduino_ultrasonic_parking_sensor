@@ -17,7 +17,7 @@ This is my attempt to put together a parking assist device that will do the obvi
 ### 3D Printed Enclosures
 #### Ultrasonic Sensor Enclosure
 <div style='text-align:center'>
-<a href="/hardware/mounting/renders/transducer_housing_solid_export.png?raw=true"><img src="/hardware/mounting/renders/transducer_housing_xray_export.png" alt="X-Ray View" width="200"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="/hardware/mounting/renders/transducer_housing_solid_export.png?raw=true"><img src="/hardware/mounting/renders/transducer_housing_solid_export.png" alt="Solid View" width="200"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="/hardware/mounting/renders/transducer_housing_xray_export.png?raw=true"><img src="/hardware/mounting/renders/transducer_housing_xray_export.png" alt="X-Ray View" width="200"></a>
 </div>
 * Wired to main enclosure for placement options
