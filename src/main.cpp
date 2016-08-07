@@ -7,6 +7,7 @@
 //
 #include "Arduino.h"
 #include <NeoPixelBus.h>
+#include <NeoPixelAnimator.h>
 #include <NewPing.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
@@ -46,6 +47,7 @@ void evalDistance(float distanceCm);
 void checkDefaultButtonPress(float distanceCm);
 float getDesiredDistance();
 void storeDesiredDistance(uint16_t dist);
+void flashOKPattern();
 
 void setup(){
     Serial.begin(115200);
@@ -71,7 +73,7 @@ void loop(){
     Serial.print("cm");
 
     evalDistance(distanceCm);
-    //checkDefaultButtonPress(distanceCm);
+    checkDefaultButtonPress(distanceCm);
     Serial.println(' ');
     delay(150);
 }
@@ -108,7 +110,39 @@ void checkDefaultButtonPress(float distanceCm){
     if(distanceCm != DesiredDistance && buttonState == LOW){
         storeDesiredDistance((uint16_t)distanceCm);
         DesiredDistance = getDesiredDistance();
+        flashOKPattern();
     }
+}
+
+void flashOKPattern(){
+    RgbColor colorGreen = RgbColor(27, 191, 33);
+    RgbColor colorWhite = RgbColor(0,0,255);
+    colorGreen.Darken(100);
+    colorWhite.Darken(180);
+
+    RgbColor ringBuffer[24];
+
+    for(uint16_t bufIndex = 0; bufIndex < 24; bufIndex++){
+        ringBuffer[bufIndex] = strip.GetPixelColor(bufIndex);
+    }
+
+    for(uint16_t index = 0; index <= strip.PixelCount(); index++){
+        if(index % 2 == 0){
+            strip.SetPixelColor(index, colorGamma.Correct(colorGreen));
+        }else{
+            strip.SetPixelColor(index, colorGamma.Correct(colorWhite));
+        }
+    }
+    strip.Show();
+    for(uint16_t rIndex = 0; rIndex <= 10; rIndex++){
+        strip.RotateRight(1);
+        strip.Show();
+        delay(300);
+    }
+    for(uint16_t bufIndex = 0; bufIndex < 24; bufIndex++){
+        strip.SetPixelColor(bufIndex,ringBuffer[bufIndex]);
+    }
+    strip.Show();
 }
 
 void evalDistance(float distanceCm){
