@@ -1,4 +1,4 @@
-## ATTiny-based Ultrasonic Parking Proximity Sensor ##
+## Arduino Pro Mini-based Ultrasonic Parking Proximity Sensor ##
 
 ### Background ###
 This is my attempt to put together a parking assist device that will do the obvious and help me not hit the wall in my garage. Could I use a tennis ball on a string like a god damn neanderthal? Sure, but where's the fun in that? =)
