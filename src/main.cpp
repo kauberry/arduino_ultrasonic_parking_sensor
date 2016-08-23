@@ -12,23 +12,33 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 
-const uint8_t TriggerPin = 12;
-const uint8_t EchoPin = 12;
-const uint8_t ButtonPin = 11;
+#if defined (__AVR_ATtiny85__)
+    const uint8_t TriggerPin = 0;
+    const uint8_t EchoPin = 0;
+    const uint8_t ButtonPin = 4;
+    const uint8_t PixelPin = 1;  // make sure to set this to the correct pin, ignored for Esp8266
+#else
+    //Arduino
+    const uint8_t TriggerPin = 12;
+    const uint8_t EchoPin = 12;
+    const uint8_t ButtonPin = 11;
+    const uint8_t PixelPin = 6;  // make sure to set this to the correct pin, ignored for Esp8266
+#endif
+
 const float AbsMaxDistance = 500.0;
 const float MaxDistance = 60.0;
+const uint64_t sleepTime = 60000;
 const uint16_t DefaultDesiredDistance = 15;
 float DesiredDistance;
 
 const uint16_t PixelCount = 24; // make sure to set this to the number of pixels in your strip
-const uint8_t PixelPin = 6;  // make sure to set this to the correct pin, ignored for Esp8266
-const uint8_t AnalogInPin = 0;
 RgbColor color;
 RgbColor altColor;
 RgbColor offColor;
 RgbColor stopColor;
 RgbColor tooFarColor;
-
+uint64_t lightsOffTimer;
+uint64_t runningTimer;
 
 int val = 0;
 
@@ -48,8 +58,11 @@ void checkDefaultButtonPress(float distanceCm);
 float getDesiredDistance();
 void storeDesiredDistance(uint16_t dist);
 void flashOKPattern();
+void flashWaitingPattern();
+void killLights();
 
 void setup(){
+    lightsOffTimer = 0;
     Serial.begin(115200);
     DesiredDistance = getDesiredDistance();
     strip.Begin();
@@ -68,14 +81,26 @@ void setup(){
 
 void loop(){
     distanceCm = sonar.ping_cm();
-    Serial.print("Distance: ");
-    Serial.print(distanceCm);
-    Serial.print("cm");
-
-    evalDistance(distanceCm);
+    if(distanceCm >= previousDistanceCm + 2 || distanceCm <= previousDistanceCm - 2){
+        lightsOffTimer = 0;
+    }else if(lightsOffTimer > sleepTime){
+        lightsOffTimer = sleepTime + (millis() - runningTimer);
+    }else{
+        lightsOffTimer += millis() - runningTimer;
+    }
+    // Serial.print("Distance: ");
+    // Serial.print(distanceCm);
+    // Serial.print("cm");
+    if(lightsOffTimer < sleepTime){
+        evalDistance(distanceCm);
+    }else{
+        killLights();
+    }
     checkDefaultButtonPress(distanceCm);
-    Serial.println(' ');
-    delay(150);
+    // Serial.println(' ');
+    runningTimer = millis();
+    // delay(150);
+    previousDistanceCm = distanceCm;
 }
 
 float getDesiredDistance(){
@@ -110,7 +135,39 @@ void checkDefaultButtonPress(float distanceCm){
     if(distanceCm != DesiredDistance && buttonState == LOW){
         storeDesiredDistance((uint16_t)distanceCm);
         DesiredDistance = getDesiredDistance();
+        // flashWaitingPattern();
         flashOKPattern();
+    }
+    // if(buttonState == LOW){
+    //     flashWaitingPattern();
+        // flashOKPattern();
+    // }
+}
+
+void killLights(){
+    strip.ClearTo(offColor);
+    strip.Show();
+    delay(500);
+}
+
+void flashWaitingPattern(){
+    RgbColor colorBlue = RgbColor(0,255,0);
+    RgbColor colorWhite = RgbColor(255,255,255);
+    colorBlue.Darken(180);
+    colorWhite.Darken(220);
+
+    for(uint16_t index = 0; index < strip.PixelCount(); index++){
+        if(index % 3 == 0){
+            strip.SetPixelColor(index, colorGamma.Correct(colorBlue));
+        }else{
+            strip.SetPixelColor(index, colorGamma.Correct(colorWhite));
+        }
+    }
+    strip.Show();
+    for(uint16_t rIndex = 0; rIndex < 15; rIndex++){
+        strip.RotateRight(1);
+        strip.Show();
+        delay(100);
     }
 }
 
@@ -147,26 +204,19 @@ void flashOKPattern(){
 
 void evalDistance(float distanceCm){
     float distanceDiv = (MaxDistance - DesiredDistance) / 12.0;
-    // float distanceDiv = (MaxDistance - distanceCm) / (MaxDistance - DesiredDistance);
     Serial.print(" / Dist Div: ");
     Serial.print(distanceDiv);
-    if(distanceCm == 0){
-        //system returns 0.0 as distance when beyond max distance
-        //turn off lights
-        strip.ClearTo(colorGamma.Correct(offColor));
-        strip.Show();
-    }else if(distanceCm > MaxDistance){
-        strip.ClearTo(colorGamma.Correct(offColor));
-        strip.Show();
+    if(distanceCm == 0 || distanceCm > MaxDistance){
+        flashWaitingPattern();
     }else if(distanceCm < DesiredDistance - distanceDiv){
         strip.ClearTo(colorGamma.Correct(tooFarColor));
         strip.Show();
+        delay(150);
     }else if(distanceCm <= DesiredDistance){
         strip.ClearTo(colorGamma.Correct(stopColor));
         strip.Show();
+        delay(150);
     }else{
-        //ABS(12  − ROUND((distanceCm − DesiredDistance) / distanceDiv,0))
-        // PixelsLit = (uint8_t)round(distanceDiv * 12.0);
         PixelsLit = (uint8_t)abs(12 - round((distanceCm - DesiredDistance) / distanceDiv));
         if(PixelsLit == 12){
             strip.ClearTo(colorGamma.Correct(stopColor));
@@ -182,9 +232,10 @@ void evalDistance(float distanceCm){
                 }
             }
         }
-        Serial.print(" / Num Pixels Lit: ");
-        Serial.print(PixelsLit);
+        // Serial.print(" / Num Pixels Lit: ");
+        // Serial.print(PixelsLit);
 
         strip.Show();
+        delay(150);
     }
 }
